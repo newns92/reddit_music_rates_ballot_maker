@@ -53,7 +53,7 @@ def final_ballot(sheet_name, username):
     # print(result_list)
 
     ## Write to text file
-    with open(f'./ballots/{sheet_name}_rate_output.txt', 'w') as f:
+    with open(f'./ballots/{sheet_name}_rate_output.txt', 'w', encoding='utf-8') as f:
         for line in result_list:
             if line == "END":
                 f.write(line)
