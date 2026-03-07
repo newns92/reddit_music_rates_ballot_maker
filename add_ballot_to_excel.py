@@ -4,37 +4,77 @@ import os
 from openpyxl import load_workbook
 
 
-def find_cell_by_value(file_name, sheet_name, target_value):
-    ## Load specified workbook and get the specified sheet
-    ##  - NOTE: Use read_only=True for performance if only reading
-    wb = load_workbook(file_name, read_only=True)
+from openpyxl import load_workbook
+
+def find_cell_by_value(filename, sheet_name, search_value_bonus, search_value_end):
+    ## Load the workbook (use read_only=True for performance if only reading)
+    wb = load_workbook(filename, read_only=True)
     ws = wb[sheet_name]
 
-    found_cells = []
+    found_end_cells = []
     
-    ## Iterate over all rows in current worksheet
+    ## Iterate over all rows in the worksheet
     for row in ws.iter_rows():
         for cell in row:
-            ## Check if the cell's value matches the target value
-            if cell.value == target_value:
-                found_cells.append(cell)
+            ## Check if the cell's value is "END"
+            if cell.value == search_value_end:
+                found_end_cells.append(cell)
+            ## If not, check for "BONUS TRACKS" and save that cell, if needed
+            elif cell.value == search_value_bonus:
+                bonus_cell = cell
 
-    if found_cells:
-        print(f"Found '{target_value}' in the following cells:")
-        for cell in found_cells:
-            print(f"- Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
+    if found_end_cells:
+        print(f"Found '{search_value_end}' in the following cells:")
+        for cell in found_end_cells:
+            print(f"- END Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
             # Example: print the value from the second column (index 1 in 0-based list) of the same row
             # Note: with read_only=True and iter_rows, accessing cells by index is easier
             # Example to get another value if needed can be handled in a separate iteration if using read_only
             # for full functionality or use the below approach if not using read_only
             # print(f"  Value in column 2 of this row: {ws.cell(row=cell.row, column=2).value}") # This requires not using read_only=True
-            
     else:
-        print(f"Value '{target_value}' not found in the sheet.")
+        print(f"Value '{search_value_end}' not found in the sheet.")
+
+    if bonus_cell:
+        print(f"Found '{search_value_bonus}' in the following cells:")
+        print(f"- BONUS TRACKS Cell coordinate: {bonus_cell.coordinate}, Row: {bonus_cell.row}, Column: {bonus_cell.column}")
+        # Example: print the value from the second column (index 1 in 0-based list) of the same row
+        # Note: with read_only=True and iter_rows, accessing cells by index is easier
+        # Example to get another value if needed can be handled in a separate iteration if using read_only
+        # for full functionality or use the below approach if not using read_only
+        # print(f"  Value in column 2 of this row: {ws.cell(row=cell.row, column=2).value}") # This requires not using read_only=True
+    else:
+        print(f"Value '{search_value_bonus}' not found in the sheet.")
         
     wb.close()
 
-    return found_cells[0].row if found_cells else None
+    # print(found_cells)
+    
+    # ## Get the BONUS TRACKS cell row number, if found
+    # final_cells = []
+    # # final_cells.append(bonus_cell.row if bonus_cell else None)
+    # final_cells.append(bonus_cell if bonus_cell else None)
+
+    # ## Then, get the max row number from the found END cell(s) to get to bottom of ballot
+    # ##  - i.e., After a bonus bonus rate, if exists
+    # # return found_end_cells[-1].row if found_end_cells else None
+    # # final_cells.append(found_end_cells[-1].row if found_end_cells else None)
+    # final_cells.append(found_end_cells[-1] if found_end_cells else None)
+
+    ## Get the BONUS TRACKS cell row number, if found
+    final_cells = {}
+    # final_cells.append(bonus_cell.row if bonus_cell else None)
+    # final_cells.append(bonus_cell if bonus_cell else None)
+    final_cells['bonus'] = bonus_cell if bonus_cell else None
+
+    ## Then, get the max row number from the found END cell(s) to get to bottom of ballot
+    ##  - i.e., After a bonus bonus rate, if exists
+    # return found_end_cells[-1].row if found_end_cells else None
+    # final_cells.append(found_end_cells[-1].row if found_end_cells else None)
+    # final_cells.append(found_end_cells[-1] if found_end_cells else None)
+    final_cells['end'] = found_end_cells[-1] if found_end_cells else None
+
+    return final_cells
 
 
 def create_sheet(file, new_sheet_name):
@@ -64,15 +104,15 @@ def create_sheet(file, new_sheet_name):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-    
-    # ## Find where the ballot ENDs in order to start the statisics portion
-    # find_cell_by_value(file, new_sheet_name, 'END')
+    ## 3. Find where alsbums end and ballot ENDs in order to start the statisics portion
+    final_cells = find_cell_by_value(file, new_sheet_name, 'BONUS TRACKS', 'END')
+    print(final_cells)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('file', help='Rates Excel file path')
+    parser.add_argument('filepath', help='Rates Excel file path')
     parser.add_argument('new_sheet_name', help='Name for new sheet for the ballot')
     args = parser.parse_args()
     
-    create_sheet(args.file, args.new_sheet_name)
+    create_sheet(args.filepath, args.new_sheet_name)
