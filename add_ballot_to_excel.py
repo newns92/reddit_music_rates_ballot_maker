@@ -67,6 +67,7 @@ def find_cells_by_value(filename, sheet_name, search_value_bonus, search_value_e
 
 
 def create_function_strings(final_cells):
+    ## TODO: Edit in case it's a grab bag, so there are no Album ranges
     ## Extract and sort album cells by row number
     ## This ensures the order of album cell coordinates is correct,
     ##  regardless of dictionary insertion order 
