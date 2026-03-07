@@ -103,6 +103,7 @@ def create_function_strings(final_cells):
     joined_ranges = ','.join(album_ranges)
     joined_full_range = f'{joined_ranges[0:2]}:{joined_ranges[-3:]}'
 
+    ## Prefix formula string with _xlfn. to avoid putting @ or {} in function cell value
     average_excel_function = f'=_xlfn.AVERAGE({joined_ranges})'
     median_excel_function = f'=_xlfn.MEDIAN({joined_ranges})'
     tens_excel_function = f'=_xlfn.COUNTIF({joined_full_range},">=10")'
@@ -119,6 +120,50 @@ def create_function_strings(final_cells):
     functions['StdDev'] = std_dev_excel_function
 
     return functions
+
+
+def insert_stats_cells(file, sheet_name, final_cells, functions):
+    """
+    EXPLAIN
+
+    Args:
+        filepath (str): Path to the .xlsx file.
+        search_value: The value to search for in the sheet.
+        values_to_insert (list): A list of values/formulas to insert 
+                                  horizontally (left to right) from the offset cell.
+        sheet_name (str): Optional sheet name. Defaults to the active sheet.
+    """
+    wb = load_workbook(file)
+    ws = wb[sheet_name]
+
+    end_row, end_col = None, None
+
+    ## Check if the 'BONUS TRACKS' cell was found and get coordinates if so
+    end_cell = final_cells['end']
+    if end_cell:
+        end_row = end_cell.row
+        end_col = end_cell.column
+    
+    # print(end_coord, end_row, end_col)
+
+    ## Move one row down, one column to the right
+    insert_row = end_row + 1
+    # insert_col = end_col + 1
+
+    ## Write each value/formula into the correct cells
+    for i, item in enumerate(functions.items()):
+        ## Break out key and value from dictionary item tuple
+        key, value = item
+        # print(f'Inserting "{key}" at row {insert_row + i}, column {insert_col}')
+        # print(f'Inserting "{value}" at row {insert_row + i}, column {insert_col + 1}')
+        formula_name_cell = f'B{str(insert_row + i)}'
+        formula_cell = f'C{str(insert_row + i)}'
+        ## Write to the above cells
+        ws[formula_name_cell] = key
+        ws[formula_cell] = value
+
+    wb.save(file)
+    wb.close()
 
 
 def create_sheet(file, new_sheet_name):
@@ -156,6 +201,10 @@ def create_sheet(file, new_sheet_name):
     excel_functions = create_function_strings(final_cells)
     print(excel_functions)
 
+    ## 5. Insert the statistics formulas into the appropriate cells
+    insert_stats_cells(file, new_sheet_name, final_cells, excel_functions)
+
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('filepath', help='Rates Excel file path')
