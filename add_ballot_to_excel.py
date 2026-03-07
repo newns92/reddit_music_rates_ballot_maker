@@ -3,6 +3,7 @@ import pandas as pd
 import argparse
 import os
 from openpyxl import load_workbook
+from openpyxl.styles import Font
 
 
 def find_cells_by_value(filename, sheet_name, search_value_bonus, search_value_end):
@@ -172,8 +173,17 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
         formula_name_cell = f'B{str(insert_row + i)}'
         formula_cell = f'C{str(insert_row + i)}'
         ## Write to the above cells
+        main_font = Font(bold=True)
+        average_font = Font(color='FFFF0000', bold=True)
+
         ws[formula_name_cell] = key
+        ws[formula_name_cell].font = main_font
+
         ws[formula_cell] = value
+        if key == 'Average':
+            ws[formula_cell].font = average_font
+        else:
+            ws[formula_cell].font = main_font
 
     ## Write each formula into the correct cells
     for i, item in enumerate(album_avg_functions.items()):
@@ -181,7 +191,7 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
         key, value = item
         # print(f'Inserting "{value}" at {key}')
         ws[key] = value
-        # ws[formula_cell] = value
+        ws[key].font = main_font
 
     wb.save(file)
     wb.close()
