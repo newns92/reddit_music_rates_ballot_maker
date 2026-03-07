@@ -66,6 +66,59 @@ def find_cells_by_value(filename, sheet_name, search_value_bonus, search_value_e
     return final_cells
 
 
+def create_function_strings(final_cells):
+    ## Extract and sort album cells by row number
+    ## This ensures the order of album cell coordinates is correct,
+    ##  regardless of dictionary insertion order 
+    album_cells = sorted(
+        ## Iterable
+        [(key, val) for key, val in final_cells.items() if key.startswith('album')],
+        ## Sort by row number of the cell value (an openpyxl 'cell' object)
+        key = lambda x: x[1].row
+    )
+    # print(album_cells)
+
+    bonus_row = final_cells['bonus'].row
+    album_ranges = []
+
+    ## For each key-cell pair in the list...
+    for i, (key, cell) in enumerate(album_cells):
+        # print(i)
+        ## Skip "Album:" row
+        range_start = cell.row + 1  
+        
+        ## If we still have albums to go through (until we reach end of len())...
+        if i + 1 < len(album_cells):
+            ## Album range ends one row above the *next* ([i + 1]) album
+            range_end = album_cells[i + 1][1].row - 1
+        ## Once our index i = length of album_cells list (we are on the final album)...
+        else:
+            ## Album range ends one row above 'BONUS TRACKS" cell
+            range_end = bonus_row - 1
+
+        album_ranges.append(f'B{range_start}:B{range_end}')
+
+    joined_ranges = ','.join(album_ranges)
+    joined_full_range = f'{joined_ranges[0:2]}:{joined_ranges[-3:]}'
+
+    average_excel_function = f'=_xlfn.AVERAGE({joined_ranges})'
+    median_excel_function = f'=_xlfn.MEDIAN({joined_ranges})'
+    tens_excel_function = f'=_xlfn.COUNTIF({joined_full_range},">=10")'
+    sub_fives_excel_function = f'=_xlfn.COUNTIF({joined_full_range},"<5")'
+    mode_excel_function = f'=_xlfn.MODE.SNGL({joined_ranges})'
+    std_dev_excel_function = f'=_xlfn.STDEV.S({joined_ranges})'
+
+    functions = {}
+    functions['Average'] = average_excel_function
+    functions['Median'] = median_excel_function
+    functions['Tens'] = tens_excel_function
+    functions['SubFives'] = sub_fives_excel_function
+    functions['Mode'] = mode_excel_function
+    functions['StdDev'] = std_dev_excel_function
+
+    return functions
+
+
 def create_sheet(file, new_sheet_name):
     ## 1. Load the ballot into a DataFrame
     df = pd.read_csv('indieheads_ult_26.txt', 
@@ -95,8 +148,11 @@ def create_sheet(file, new_sheet_name):
 
     ## 3. Find where alsbums end and ballot ENDs in order to start the statisics portion
     final_cells = find_cells_by_value(file, new_sheet_name, 'BONUS TRACKS', 'END')
-    print(final_cells)
+    # print(final_cells)
 
+    ## 4. Create the Excel formula strings for the statistics to be added
+    functions = create_function_strings(final_cells)
+    print(functions)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
