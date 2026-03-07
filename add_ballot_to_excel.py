@@ -81,6 +81,9 @@ def create_function_strings(final_cells):
     # print(album_cells)
 
     bonus_row = final_cells['bonus'].row
+    end_row = final_cells['end'].row
+
+    album_avg_cells = {}
     album_ranges = []
 
     ## For each key-cell pair in the list...
@@ -99,6 +102,10 @@ def create_function_strings(final_cells):
             range_end = bonus_row - 1
 
         album_ranges.append(f'B{range_start}:B{range_end}')
+        album_avg_cells[f'B{cell.row}'] = f'B{range_start}:B{range_end}'
+
+    bonus_range = f'B{bonus_row + 1}:B{end_row - 1}'
+    album_avg_cells[f'B{bonus_row}'] = bonus_range
 
     joined_ranges = ','.join(album_ranges)
     joined_full_range = f'{joined_ranges[0:2]}:{joined_ranges[-3:]}'
@@ -111,18 +118,23 @@ def create_function_strings(final_cells):
     mode_excel_function = f'=_xlfn.MODE.SNGL({joined_ranges})'
     std_dev_excel_function = f'=_xlfn.STDEV.S({joined_ranges})'
 
-    functions = {}
-    functions['Average'] = average_excel_function
-    functions['Median'] = median_excel_function
-    functions['Tens'] = tens_excel_function
-    functions['SubFives'] = sub_fives_excel_function
-    functions['Mode'] = mode_excel_function
-    functions['StdDev'] = std_dev_excel_function
+    totals_functions = {}
+    totals_functions['Average'] = average_excel_function
+    totals_functions['Median'] = median_excel_function
+    totals_functions['Tens'] = tens_excel_function
+    totals_functions['SubFives'] = sub_fives_excel_function
+    totals_functions['Mode'] = mode_excel_function
+    totals_functions['StdDev'] = std_dev_excel_function
 
-    return functions
+    album_avg_functions = {}
+    for i, (key, val) in enumerate(album_avg_cells.items()):
+        # print(f'Album {i} average function: 'f'=_xlfn.AVERAGE({val})')
+        album_avg_functions[key] = f'=_xlfn.AVERAGE({val})'
+
+    return totals_functions, album_avg_functions
 
 
-def insert_stats_cells(file, sheet_name, final_cells, functions):
+def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_avg_functions):
     """
     EXPLAIN
 
@@ -136,13 +148,14 @@ def insert_stats_cells(file, sheet_name, final_cells, functions):
     wb = load_workbook(file)
     ws = wb[sheet_name]
 
-    end_row, end_col = None, None
+    # end_row, end_col = None, None
+    end_row = None
 
     ## Check if the 'BONUS TRACKS' cell was found and get coordinates if so
     end_cell = final_cells['end']
     if end_cell:
         end_row = end_cell.row
-        end_col = end_cell.column
+        # end_col = end_cell.column
     
     # print(end_coord, end_row, end_col)
 
@@ -151,7 +164,7 @@ def insert_stats_cells(file, sheet_name, final_cells, functions):
     # insert_col = end_col + 1
 
     ## Write each value/formula into the correct cells
-    for i, item in enumerate(functions.items()):
+    for i, item in enumerate(totals_functions.items()):
         ## Break out key and value from dictionary item tuple
         key, value = item
         # print(f'Inserting "{key}" at row {insert_row + i}, column {insert_col}')
@@ -161,6 +174,14 @@ def insert_stats_cells(file, sheet_name, final_cells, functions):
         ## Write to the above cells
         ws[formula_name_cell] = key
         ws[formula_cell] = value
+
+    ## Write each formula into the correct cells
+    for i, item in enumerate(album_avg_functions.items()):
+        ## Break out key and value from dictionary item tuple
+        key, value = item
+        # print(f'Inserting "{value}" at {key}')
+        ws[key] = value
+        # ws[formula_cell] = value
 
     wb.save(file)
     wb.close()
@@ -198,13 +219,15 @@ def create_sheet(file, new_sheet_name):
     # print(final_cells)
 
     ## 4. Create the Excel formula strings for the statistics to be added
-    excel_functions = create_function_strings(final_cells)
-    print(excel_functions)
+    totals_functions, album_avg_functions = create_function_strings(final_cells)
+    # print(excel_functions)
 
     ## 5. Insert the statistics formulas into the appropriate cells
-    insert_stats_cells(file, new_sheet_name, final_cells, excel_functions)
+    insert_stats_cells(file, new_sheet_name, final_cells,
+                       totals_functions, album_avg_functions
+                    )
 
-    
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('filepath', help='Rates Excel file path')
