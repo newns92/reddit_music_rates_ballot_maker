@@ -1,3 +1,4 @@
+## TODO: Function definition and comments
 import pandas as pd
 import argparse
 import os
@@ -152,8 +153,8 @@ def create_sheet(file, new_sheet_name):
     # print(final_cells)
 
     ## 4. Create the Excel formula strings for the statistics to be added
-    functions = create_function_strings(final_cells)
-    print(functions)
+    excel_functions = create_function_strings(final_cells)
+    print(excel_functions)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
