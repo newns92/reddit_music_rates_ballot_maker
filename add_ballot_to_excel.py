@@ -175,6 +175,7 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
         ## Write to the above cells
         main_font = Font(bold=True)
         average_font = Font(color='FFFF0000', bold=True)
+        stats_number_format = '0.000'
 
         ws[formula_name_cell] = key
         ws[formula_name_cell].font = main_font
@@ -184,6 +185,9 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
             ws[formula_cell].font = average_font
         else:
             ws[formula_cell].font = main_font
+        
+        if key in ['Average', 'Median', 'StdDev']:
+            ws[formula_cell].number_format = stats_number_format
 
     ## Write each formula into the correct cells
     for i, item in enumerate(album_avg_functions.items()):
@@ -191,7 +195,11 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
         key, value = item
         # print(f'Inserting "{value}" at {key}')
         ws[key] = value
-        ws[key].font = main_font
+        ws[key].number_format = stats_number_format
+        if i + 1 == len(album_avg_functions):
+            ws[key].font = average_font
+        else:
+            ws[key].font = main_font
 
     wb.save(file)
     wb.close()
