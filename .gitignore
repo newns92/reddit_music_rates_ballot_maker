@@ -2,3 +2,4 @@ final_ballot_test.ipynb
 add_ballot_to_excel.ipynb
 *.txt
 *.xlsx
+\ballots
