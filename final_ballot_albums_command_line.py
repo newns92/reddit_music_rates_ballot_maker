@@ -61,7 +61,7 @@ def final_ballot(sheet_name, username):
             else:
                 f.write(line + '\n\n')
 
-    print(f"\nResults written to {sheet_name}_rate_output.txt in {len(result_list)} lines")
+    print(f"\nResults written to ballots/{sheet_name}_rate_output.txt in {len(result_list)} lines")
 
 
 if __name__ == "__main__":
