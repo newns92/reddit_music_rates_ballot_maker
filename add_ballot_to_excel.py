@@ -1,8 +1,13 @@
 ## TODO: Function definition and comments
 ## TODO: Add functionality to create an index of sheets
+## TODO: Add functionality to check if sheet name already exists 
+# and prompt user to overwrite or choose a different name
+## TODO: Update code to search in an eventual directory storing raw txt ballots
+## TODO: Add functionality to select the most-recently created sheet in Excel
+##  so that is appears upon opening the file
 import pandas as pd
 import argparse
-import os
+import os  ## TODO: Create dirs if don't exist
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 
@@ -287,4 +292,6 @@ if __name__ == "__main__":
     
     # create_sheet(args.filepath, args.ballot_name, args.new_sheet_name)
 
-    create_sheet('./rates.xlsx', './kpop2025.txt', 'kpop2025')
+    create_sheet('./rates.xlsx', './serverPride.txt', 'serverPride')
+# https://open.spotify.com/playlist/5iodWRgXYFjO3TVawvPYhq
+# JUl something
