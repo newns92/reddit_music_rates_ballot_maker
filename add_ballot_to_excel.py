@@ -1,4 +1,5 @@
 ## TODO: Function definition and comments
+## TODO: Add functionality to create an index of sheets
 import pandas as pd
 import argparse
 import os
@@ -20,36 +21,42 @@ def find_cells_by_value(filename, sheet_name, search_value_bonus, search_value_e
             ## Check if the cell's value is "END"
             if cell.value == search_value_end:
                 found_end_cells.append(cell)
-            ## If not, check for "BONUS TRACKS" and save that cell, if needed
-            elif cell.value == search_value_bonus:
+            ## If not, check for "BONUS TRACKS" or "BONUS TRACKS:" and save that cell, if needed
+            elif (
+                    cell.value == search_value_bonus 
+                    or cell.value == search_value_bonus + ":"
+                ):
                 bonus_cell = cell
             elif cell.value[0:6] == 'Album:':
                 found_album_cells.append(cell)
 
-    if found_end_cells:
-        print(f"Found '{search_value_end}' in the following cells:")
-        for cell in found_end_cells:
-            print(f"- END Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
-            # Example: print the value from the second column (index 1 in 0-based list) of the same row
-            # Note: with read_only=True and iter_rows, accessing cells by index is easier
-            # Example to get another value if needed can be handled in a separate iteration if using read_only
-            # for full functionality or use the below approach if not using read_only
-            # print(f"  Value in column 2 of this row: {ws.cell(row=cell.row, column=2).value}") # This requires not using read_only=True
-    else:
+    # if found_end_cells:
+    #     print(f"Found '{search_value_end}' in the following cells:")
+    #     for cell in found_end_cells:
+    #         print(f"- END Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
+    #         # Example: print the value from the second column (index 1 in 0-based list) of the same row
+    #         # Note: with read_only=True and iter_rows, accessing cells by index is easier
+    #         # Example to get another value if needed can be handled in a separate iteration if using read_only
+    #         # for full functionality or use the below approach if not using read_only
+    #         # print(f"  Value in column 2 of this row: {ws.cell(row=cell.row, column=2).value}") # This requires not using read_only=True
+    # else:
+    if not found_end_cells:
         print(f"Value '{search_value_end}' not found in the sheet.")
 
-    if bonus_cell:
-        print(f"Found '{search_value_bonus}' in the following cells:")
-        print(f"- BONUS TRACKS Cell coordinate: {bonus_cell.coordinate}, Row: {bonus_cell.row}, Column: {bonus_cell.column}")
-    else:
+    # if bonus_cell:
+    #     print(f"Found '{search_value_bonus}' in the following cells:")
+    #     print(f"- BONUS TRACKS Cell coordinate: {bonus_cell.coordinate}, Row: {bonus_cell.row}, Column: {bonus_cell.column}")
+    # else:
+    if not bonus_cell:
         print(f"Value '{search_value_bonus}' not found in the sheet.")
 
-    if found_album_cells:
-        print("Found albums in the following cells:")
-        for cell in found_album_cells:
-            print(f"- Album Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
-    else:
-        print('No album cells found in the sheet.')
+    # # if found_album_cells:
+    # #     print("Found albums in the following cells:")
+    # #     for cell in found_album_cells:
+    # #         print(f"- Album Cell coordinate: {cell.coordinate}, Row: {cell.row}, Column: {cell.column}")
+    # # else:
+    # if not found_album_cells:
+    #     print('No album cells found in the sheet.')
         
     wb.close()
 
@@ -69,7 +76,7 @@ def find_cells_by_value(filename, sheet_name, search_value_bonus, search_value_e
 
 
 def create_function_strings(final_cells):
-    ## TODO: Edit in case it's a grab bag, so there are no Album ranges
+    ## TODO: Fix copying joined_ranges to full_joinged_ranges for the bonus range in the grab bag case
     ## Extract and sort album cells by row number
     ## This ensures the order of album cell coordinates is correct,
     ##  regardless of dictionary insertion order 
@@ -79,7 +86,7 @@ def create_function_strings(final_cells):
         ## Sort by row number of the cell value (an openpyxl 'cell' object)
         key = lambda x: x[1].row
     )
-    # print(album_cells)
+    # print(f'ALBUM CELLS: {album_cells}')
 
     bonus_row = final_cells['bonus'].row
     end_row = final_cells['end'].row
@@ -107,35 +114,60 @@ def create_function_strings(final_cells):
 
     bonus_range = f'B{bonus_row + 1}:B{end_row - 1}'
     album_avg_cells[f'B{bonus_row}'] = bonus_range
+    
+    ## If it's a grab bag (no albums found)...
+    if not album_cells:
+        ## Then create the range of the main rate
+        joined_ranges = f'B2:B{bonus_row - 1}'
+        # print(f'GRAB BAG MAIN RATE RANGE: {joined_ranges}')
+        joined_full_range = joined_ranges
+    else:
+        ## Otherwise join the album ranges with commas for the eventual functions
+        joined_ranges = ','.join(album_ranges)
+        # print(f'ALBUM RANGES: {joined_ranges}')
+        joined_full_range = f'{joined_ranges[0:2]}:{joined_ranges[-3:]}'
 
-    joined_ranges = ','.join(album_ranges)
-    joined_full_range = f'{joined_ranges[0:2]}:{joined_ranges[-3:]}'
+    ## OUTDATED AS OF 6/5/26 due to corrupting the file
+    # ## Prefix formula string with _xlfn. to avoid putting @ or {} in function cell value
+    # average_excel_function = f' =_xlfn.AVERAGE({joined_ranges})'
+    # median_excel_function = f' =_xlfn.MEDIAN({joined_ranges})'
+    # tens_excel_function = f' =_xlfn.COUNTIF({joined_full_range},">=10")'
+    # sub_fives_excel_function = f' =_xlfn.COUNTIF({joined_full_range},"<5")'
+    # mode_excel_function = f' =_xlfn.MODE.SNGL({joined_ranges})'
+    # std_dev_excel_function = f' =_xlfn.STDEV.S({joined_ranges})'
 
-    ## Prefix formula string with _xlfn. to avoid putting @ or {} in function cell value
-    average_excel_function = f'=_xlfn.AVERAGE({joined_ranges})'
-    median_excel_function = f'=_xlfn.MEDIAN({joined_ranges})'
-    tens_excel_function = f'=_xlfn.COUNTIF({joined_full_range},">=10")'
-    sub_fives_excel_function = f'=_xlfn.COUNTIF({joined_full_range},"<5")'
-    mode_excel_function = f'=_xlfn.MODE.SNGL({joined_ranges})'
-    std_dev_excel_function = f'=_xlfn.STDEV.S({joined_ranges})'
+    # totals_functions = {}
+    # totals_functions['Average'] = average_excel_function
+    # totals_functions['Median'] = median_excel_function
+    # totals_functions['Tens'] = tens_excel_function
+    # totals_functions['SubFives'] = sub_fives_excel_function
+    # totals_functions['Mode'] = mode_excel_function
+    # totals_functions['StdDev'] = std_dev_excel_function
 
-    totals_functions = {}
-    totals_functions['Average'] = average_excel_function
-    totals_functions['Median'] = median_excel_function
-    totals_functions['Tens'] = tens_excel_function
-    totals_functions['SubFives'] = sub_fives_excel_function
-    totals_functions['Mode'] = mode_excel_function
-    totals_functions['StdDev'] = std_dev_excel_function
+    totals_functions = {
+        ## Standard functions — no prefix needed, Excel handles these fine
+        'Average':  f'=AVERAGE({joined_ranges})',
+        'Median':   f'=MEDIAN({joined_ranges})',
+        'Tens':     f'=COUNTIF({joined_full_range}, ">=10")',
+        'SubFives': f'=COUNTIF({joined_full_range}, "<5")',
+        ## Dot-notation functions — the only ones that actually need _xlfn.
+        'Mode':     f'=_xlfn.MODE.SNGL({joined_ranges})',
+        'StdDev':   f'=_xlfn.STDEV.S({joined_ranges})',
+    }
 
     album_avg_functions = {}
     for i, (key, val) in enumerate(album_avg_cells.items()):
         # print(f'Album {i} average function: 'f'=_xlfn.AVERAGE({val})')
-        album_avg_functions[key] = f'=_xlfn.AVERAGE({val})'
+        # album_avg_functions[key] = f'=_xlfn.AVERAGE({val})'
+        album_avg_functions[key] = f'=AVERAGE({val})'
+
 
     return totals_functions, album_avg_functions
 
 
 def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_avg_functions):
+    # TODO: Finish function description
+    # TODO: Check commented out strings adding functions to cells
     """
     EXPLAIN
 
@@ -168,8 +200,8 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
     for i, item in enumerate(totals_functions.items()):
         ## Break out key and value from dictionary item tuple
         key, value = item
-        # print(f'Inserting "{key}" at row {insert_row + i}, column {insert_col}')
-        # print(f'Inserting "{value}" at row {insert_row + i}, column {insert_col + 1}')
+        # print(f'Inserting "{key}" at row {insert_row + i}, column B') # {insert_col}')
+        # print(f'Inserting "{value}" at row {insert_row + i}, column C') # {insert_col + 1}')
         formula_name_cell = f'B{str(insert_row + i)}'
         formula_cell = f'C{str(insert_row + i)}'
         ## Write to the above cells
@@ -205,9 +237,9 @@ def insert_stats_cells(file, sheet_name, final_cells, totals_functions, album_av
     wb.close()
 
 
-def create_sheet(file, new_sheet_name):
+def create_sheet(file, ballot_name, new_sheet_name):
     ## 1. Load the ballot into a DataFrame
-    df = pd.read_csv('indieheads_ult_26.txt', 
+    df = pd.read_csv(ballot_name, 
                      sep='\r', 
                      header=None
                 )
@@ -225,7 +257,7 @@ def create_sheet(file, new_sheet_name):
                             header=False
                         )
                 
-        print(f'DataFrame successfully written to sheet {new_sheet_name} in {file}')
+        print(f'DataFrame successfully written to sheet \'{new_sheet_name}\' in {file}')
 
     except FileNotFoundError:
         print(f"Error: The file '{file}' was not found. Please ensure the file exists.")
@@ -247,9 +279,12 @@ def create_sheet(file, new_sheet_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filepath', help='Rates Excel file path')
-    parser.add_argument('new_sheet_name', help='Name for new sheet for the ballot')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('filepath', help='Rates Excel file path')
+    # parser.add_argument('ballot_name', help='Name/path of the ballot file')
+    # parser.add_argument('new_sheet_name', help='Name for new sheet for the ballot')
+    # args = parser.parse_args()
     
-    create_sheet(args.filepath, args.new_sheet_name)
+    # create_sheet(args.filepath, args.ballot_name, args.new_sheet_name)
+
+    create_sheet('./rates.xlsx', './kpop2025.txt', 'kpop2025')
