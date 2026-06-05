@@ -43,6 +43,8 @@ def final_ballot(sheet_name, username):
 
     # print(result_list)
 
+    ## TODO: Do NOT add in average from bonus tracks to the final ballot output
+
     ## Write results to corresponding text file
     with open(f'./ballots/{sheet_name}_rate_output.txt', 'w') as f:
         for line in result_list:
@@ -55,4 +57,4 @@ def final_ballot(sheet_name, username):
     print(f"\nResults written to {sheet_name}_rate_output.txt in {len(result_list)} lines")
 
 if __name__ == "__main__":
-    final_ballot('MusicNerdKpop', 'testUser')
+    final_ballot('ServerRemix', 'nimz (Non-Vocal Mix)')
