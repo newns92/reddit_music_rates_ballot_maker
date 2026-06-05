@@ -293,5 +293,3 @@ if __name__ == "__main__":
     # create_sheet(args.filepath, args.ballot_name, args.new_sheet_name)
 
     create_sheet('./rates.xlsx', './serverPride.txt', 'serverPride')
-# https://open.spotify.com/playlist/5iodWRgXYFjO3TVawvPYhq
-# JUl something
